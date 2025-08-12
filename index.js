@@ -102,7 +102,7 @@ const tools = [
         priority: {
           type: 'number',
           enum: [0.1, 1, 1.5, 2],
-          description: t('Priority (0.1=low, 1=med, 1.5=high, 2=urgent)', '优先级 (0.1=低, 1=中, 1.5=高, 2=极高)'),
+          description: t('Priority (0.1=trivial, 1=easy, 1.5=medium, 2=hard)', '优先级 (0.1=微不足道, 1=简单, 1.5=中等, 2=困难)'),
         },
         checklist: {
           type: 'array',

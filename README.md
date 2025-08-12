@@ -255,10 +255,10 @@ AI:   "Great job! The workout is logged."
 
 ## Priority Levels
 
-- `0.1`: Low
-- `1`: Medium
-- `1.5`: High
-- `2`: Extreme
+- `0.1`: Trivial
+- `1`: Easy
+- `1.5`: Medium
+- `2`: Hard
 
 ## 🔧 Troubleshooting
 
