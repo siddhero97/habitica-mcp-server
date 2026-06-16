@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 import 'dotenv/config';
+import express from 'express';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -956,9 +958,54 @@ async function scoreChecklistItem(taskId, itemId) {
 
 // 启动服务器
 async function runServer() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error('Habitica MCP 服务器已启动');
+  if (process.env.PORT || process.env.MCP_TRANSPORT === 'sse') {
+    const app = express();
+    const port = process.env.PORT || 3000;
+    const transports = new Map();
+
+    // CORS middleware
+    app.use((req, res, next) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+      }
+      next();
+    });
+
+    app.get('/sse', async (req, res) => {
+      console.error('New SSE connection requested');
+      const transport = new SSEServerTransport('/messages', res);
+      transports.set(transport.sessionId, transport);
+      
+      await server.connect(transport);
+
+      res.on('close', () => {
+        console.error(`SSE connection closed for session: ${transport.sessionId}`);
+        transports.delete(transport.sessionId);
+      });
+    });
+
+    app.post('/messages', express.json(), async (req, res) => {
+      const sessionId = req.query.sessionId;
+      const transport = transports.get(sessionId);
+
+      if (!transport) {
+        return res.status(404).send('Session not found');
+      }
+
+      await transport.handlePostMessage(req, res);
+    });
+
+    app.listen(port, () => {
+      console.error(`Habitica MCP SSE server running on port ${port}`);
+    });
+  } else {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error('Habitica MCP 服务器已启动');
+  }
 }
 
 runServer().catch((error) => {
